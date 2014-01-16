@@ -3,6 +3,7 @@ from psychopy import visual, core, event,gui
 from psychopy.misc import pix2deg
 import numpy as np
 from subprocess import call
+import os
 
 
 def exportFrame(positions,fn,maze=None,wind=None):
@@ -34,13 +35,15 @@ def exportFrame(positions,fn,maze=None,wind=None):
         raise
     
 def exportTrial(outname,trajectories,wind=None,hz=60):
+    #breaks=[250,500,750,1000,1250,1500,1750,2000,2250,2550]
+    breaks=[200,400,600]
     if type(wind)==type(None):
         wind=Q.initDisplay()
     try:
         nrframes=trajectories.shape[0]
         cond=trajectories.shape[1]
         elem=visual.ElementArrayStim(wind,fieldShape='sqr',nElements=cond,
-            sizes=Q.agentSize,elementMask=RING,elementTex=None)
+            sizes=Q.agentSize,elementMask=Q.mask,elementTex=None)
         t0=core.getTime()
         for f in range(nrframes):
             
@@ -56,15 +59,15 @@ def exportTrial(outname,trajectories,wind=None,hz=60):
                     break;
                     #core.quit()
             #print f
-            if f in [250,500,750,1000,1250,1500,1750,2000,2250,2550]:
-                wind.saveMovieFrames('%s%d.mpeg'%(outname,f/250-1),mpgCodec='mpeg1video')
+            if f in breaks:
+                wind.saveMovieFrames('%s%d.mpeg'%(outname,f/(breaks[1]-breaks[0])-1),mpgCodec='mpeg1video')
         s='copy/b '
-        for i in range(10): s+= '%s%d.mpeg+'% (outname,i)
+        for i in range(len(breaks)): s+= '%s%d.mpeg+'% (outname,i)
         s=s[:-1]
         s+= ' %s.mpeg'%outname
         #print s
         call(s,shell=True)
-        for i in range(10): call('DEL %s%d.mpeg'%(outname,i),shell=True)
+        for i in range(len(breaks)): call('DEL %s%d.mpeg'%(outname,i),shell=True)
         #print core.getTime()-t0
         wind.close()
     except: 
@@ -192,18 +195,17 @@ def showTrial(trajectories,qsettings,wind=None,highlightChase=False,
 
 if __name__ == '__main__':
     #t=np.load('test.npy')
-    from Settings import Q
-    from Constants import *
-    from Maze import *
-    from evalETdata import *
-    #data=readEdf(fname='VP001.ASC')
-    #maze=TestMaze(10,dispSize=24)
-    #traj=np.load('input/vp001/trial019.npy')
-    #showTrial(traj,highlightChase=True,gazeData=data[18][:,[1,2]])
-    #r=traj2image(t[113,:,:].squeeze())
-    vp=1
-    for b in range(4,5):
-        for tr in range(15,40):
-            print vp,b,tr
-            t=np.load(Q.inputPath+'vp%03d'%vp+Q.delim+'vp%03db%dtrial%03d.npy'%(vp,b,tr))
-            exportTrial('saliency'+Q.delim+'mpeg'+Q.delim+'vp%03db%dtrial%03d'%(vp,b,tr),t)
+
+#    vp=1
+#    for b in range(4,5):
+#        for tr in range(15,40):
+#            print vp,b,tr
+#            t=np.load(Q.inputPath+'vp%03d'%vp+Q.delim+'vp%03db%dtrial%03d.npy'%(vp,b,tr))
+#            exportTrial('saliency'+Q.delim+'mpeg'+Q.delim+'vp%03db%dtrial%03d'%(vp,b,tr),t)
+    from Settings import *
+    Q=initQ(gao09)
+    path='trajectoryData'+os.path.sep+'gao09'+os.path.sep
+    for i in range(1000):
+        print i
+        t=np.load(path+'t%03d.npy'%i)[:,:-1,:]
+        exportTrial(path+'mpeg'+os.path.sep+'t%03d'%i,t)

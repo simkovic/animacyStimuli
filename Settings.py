@@ -9,7 +9,7 @@ __all__ = ['initQ','mychase','gao09','gao10e3','gao10e4']
 class Settings():
     def __init__(self,monitor,trialDur,refreshRate,agentSize,phiRange,
         pDirChange,initDistCC,bckgCLR,agentCLR,mouseoverCLR,selectedCLR,aSpeed,
-        winPos,fullscr,rejDist,nragents,maze):
+        winPos,fullscr,rejDist,nragents,maze,mask):
         ''' phiRange        - in degrees [0-360]
             agentSize       - in degrees of visial angle
             initDistCC      - list of len==2 (min,max), values in degrees of visial angle
@@ -21,6 +21,7 @@ class Settings():
             aSpeed          - in degrees of visual angle per second
             rejDist         - rejection Distance in degress of visual angle
             nragents        - number of agents
+            mask            - 2d array giving mask for the objects shape
         '''
         self.refreshRate=float(refreshRate)
         self.monitor=monitor
@@ -46,6 +47,7 @@ class Settings():
         self.fullscr=fullscr
         self.nragents=nragents
         self.maze=maze
+        self.mask=mask
     def setTrialDur(self,td):
         self.trialDur=td
         self.nrframes=self.trialDur*self.refreshRate+1
@@ -86,7 +88,7 @@ class Settings():
 dell=monitors.Monitor('dell', width=37.8, distance=50); dell.setSizePix((1280,1024))
 
 laptop={'monitor' :     dell,
-        'refreshRate':  60,                 # [hz]
+        'refreshRate':  75,                 # [hz]
         'fullscr':      True,
         'winPos':       (0,0)              # in pixels; X,Y axis; center at 0,0
         }
@@ -103,7 +105,7 @@ mychase={'phiRange':     [120,0*2],         # in degrees [0-360]
         'rejDist':      3.0,                 # in degress of visual angle
          'maze':        EmptyMaze((1,1),dispSize=(26,26),lw2cwRatio=0.0),
          'nragents':    14,
-         'rejSampType': 1                  # type of rejection sampling
+         'mask':        RING
         }
 
 gao09={'phiRange':      [120,None],         
@@ -118,7 +120,8 @@ gao09={'phiRange':      [120,None],
         'aSpeed':       14.5,             
         'rejDist':      5.0,                 
          'maze':        EmptyMaze((1,1),dispSize=(32,24),lw2cwRatio=0.0),
-         'nragents':    5
+         'nragents':    5,
+         'mask':        RING
        }
 
 gao10e4={'phiRange':     [120,None],         
