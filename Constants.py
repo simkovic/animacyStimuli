@@ -1,0 +1,8 @@
+# some constants .
+CHASEE=0
+CHASER=1
+DISTRACTOR=2
+DISTRACTOR2=3
+X=0;Y=1;PHI=2;T=2
+I=0;J=1
+MIN=0;MAX=1

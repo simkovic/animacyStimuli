@@ -1,4 +1,3 @@
-from Settings import *
 from Constants import *
 from psychopy import visual, core, event,gui
 from psychopy.misc import pix2deg
@@ -22,7 +21,7 @@ def exportFrame(positions,fn,maze=None,wind=None):
             maze.draw(wind)
             maze.draw(wind)
         elem=visual.ElementArrayStim(wind,fieldShape='circle',
-            nElements=cond,sizes=agentSize,rgbs=clrs,
+            nElements=cond,sizes=agentSize,colors=clrs,
             elementMask='circle',elementTex=None)
         elem.setXYs(positions)      
         elem.draw()    
@@ -104,16 +103,15 @@ def exportTremoulet(wind=None):
     
     
 def showFrame(positions,maze=None,wind=None, elem=None,highlightChase=False):
-    if type(wind)==type(None):
-        wind=initDisplay()
-    if type(elem)==type(None):
+    if wind is None: wind=initDisplay()
+    if elem is None:
         cond=positions.shape[0]
         clrs=np.ones((cond,3))
         if highlightChase:
             clrs[0,[0,2]]=0
             clrs[1,[1,2]]=0
         elem=visual.ElementArrayStim(wind,fieldShape='sqr',
-            nElements=cond,sizes=agentSize,rgbs=clrs,
+            nElements=cond,sizes=agentSize,colors=clrs,
             elementMask=RING,elementTex=None)
     try:
         if type(maze)!=type(None):
@@ -125,16 +123,16 @@ def showFrame(positions,maze=None,wind=None, elem=None,highlightChase=False):
         wind.close()
         raise
     
-def showTrial(trajectories,maze=None,wind=None,highlightChase=False,
-        origRefresh=100.0,gazeData=None,gazeDataRefresh=250.0):
+def showTrial(trajectories,qsettings,wind=None,highlightChase=False,
+        origRefresh=None,gazeData=None,gazeDataRefresh=250.0):
     """
         shows the trial as given by TRAJECTORIES
     """
-    
-    if type(wind)==type(None):
-        wind=Q.initDisplay(1000)
+    Q=qsettings
+    if wind is None:  wind=Q.initDisplay(1000)
     core.wait(2)
     try:
+        if origRefresh is None: origRefresh=Q.refreshRate
         nrframes=int(trajectories.shape[0]/origRefresh*Q.refreshRate)
         cond=trajectories.shape[1]
         if gazeData!=None:
@@ -146,10 +144,9 @@ def showTrial(trajectories,maze=None,wind=None,highlightChase=False,
             clrs[0,[0,2]]=0
             clrs[1,[1,2]]=0
         elem=visual.ElementArrayStim(wind,fieldShape='sqr',
-            nElements=cond,sizes=Q.agentSize,rgbs=clrs,
-            elementMask=RING,elementTex=None)
-        if type(maze)!=type(None):
-            maze.draw(wind)
+            nElements=cond,sizes=Q.agentSize,colors=clrs,
+            elementMask='circle',elementTex=None,interpolate=False)
+        #Q.maze.draw(wind)
         wind.flip()
         t0=core.getTime()
         for f in range(nrframes):
@@ -176,7 +173,7 @@ def showTrial(trajectories,maze=None,wind=None,highlightChase=False,
                     gaze=pos0+(pos1-pos0)*(fnew-np.floor(fnew))
                 
                 pos=np.array(np.concatenate((pos,np.matrix(gaze)),axis=0))
-            showFrame(pos, wind=wind,elem=elem, highlightChase=highlightChase)
+            showFrame(pos, wind=wind,elem=elem)
             #core.wait(0.02)
             for key in event.getKeys():
                 if key in ['escape']:

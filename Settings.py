@@ -1,16 +1,29 @@
 from psychopy import visual,monitors
 from psychopy.misc import pix2deg,deg2pix
 from Constants import *
-from os import getcwd
+import os
 import pickle
+from Maze import EmptyMaze
 
+__all__ = ['initQ','mychase','gao09','gao10e3','gao10e4']
 class Settings():
-    def __init__(self,monitor,os,trialDur,refreshRate,agentSize,phiRange,
+    def __init__(self,monitor,trialDur,refreshRate,agentSize,phiRange,
         pDirChange,initDistCC,bckgCLR,agentCLR,mouseoverCLR,selectedCLR,aSpeed,
-        guiPos,winPos,fullscr):
+        winPos,fullscr,rejDist,nragents,maze):
+        ''' phiRange        - in degrees [0-360]
+            agentSize       - in degrees of visial angle
+            initDistCC      - list of len==2 (min,max), values in degrees of visial angle
+            pDirChange      - len 3 list, avg number of direction changes per second
+            agentCLR        - range [1 -1]
+            mouseoverCLR    - range [1 -1]
+            selectedCLR     - range [1 -1]
+            trialDur        - in seconds
+            aSpeed          - in degrees of visual angle per second
+            rejDist         - rejection Distance in degress of visual angle
+            nragents        - number of agents
+        '''
         self.refreshRate=float(refreshRate)
         self.monitor=monitor
-        self.os=os
         self.fullscr=fullscr
         self.setTrialDur(trialDur)
         self.agentSize=agentSize
@@ -22,17 +35,17 @@ class Settings():
         self.mouseoverCLR=mouseoverCLR
         self.selectedCLR=selectedCLR
         self.setAspeed(aSpeed)
-        self.guiPos=guiPos
         self.winPos=winPos
-        if self.os==WINDOWS: self.delim='\\'
-        else: self.delim='/'
-        path = getcwd()
+        self.rejDist=rejDist
+        path = os.getcwd()
         path = path.rstrip('code')
-        self.inputPath=path+"input"+self.delim
-        self.outputPath=path+"output"+self.delim
-        self.stimPath=path+"stimuli"+self.delim
+        self.inputPath=path+"input"+os.path.sep
+        self.outputPath=path+"output"+os.path.sep
+        self.stimPath=path+"stimuli"+os.path.sep
         self.agentRadius=self.agentSize/2.0
         self.fullscr=fullscr
+        self.nragents=nragents
+        self.maze=maze
     def setTrialDur(self,td):
         self.trialDur=td
         self.nrframes=self.trialDur*self.refreshRate+1
@@ -47,7 +60,7 @@ class Settings():
         elif type(sz)==int: sz=(sz,sz)
         wind=visual.Window(monitor=self.monitor,fullscr=self.fullscr,
             size=sz,units='deg',color=self.bckgCLR,pos=self.winPos,
-            winType='pyglet',screen=1)
+            winType='pyglet')
         return wind
     def norm2pix(self,xy):
         return (np.array(xy)) * np.array(self.monitor.getSizePix())/2.0
@@ -68,16 +81,16 @@ class Settings():
         try: out=pickle.load(f);f.close()
         except: f.close(); raise
         return out
+
 # monitors
 dell=monitors.Monitor('dell', width=37.8, distance=50); dell.setSizePix((1280,1024))
-sonycrt=monitors.Monitor('sony', width=40, distance=60); sonycrt.setSizePix((1280,1024))
-smidell=monitors.Monitor('smiDell', width=47.5, distance=60);smidell.setSizePix((1680,1024))
-t60=monitors.Monitor('tobii', width=34, distance=50); t60.setSizePix((1280,1024))
 
 laptop={'monitor' :     dell,
         'refreshRate':  60,                 # [hz]
-        'os':           LINUX,              # Linux or Windows
-        'phiRange':     [120,0*2],          # in degrees [0-360]
+        'fullscr':      True,
+        'winPos':       (0,0)              # in pixels; X,Y axis; center at 0,0
+        }
+mychase={'phiRange':     [120,0*2],         # in degrees [0-360]
         'agentSize':    1,                  # in degrees of visial angle
         'initDistCC':   [12.0 ,18.0],       # in degrees of visial angle
         'pDirChange':   [4.8,5.4,4.8],          # avg number of direction changes per second
@@ -87,99 +100,58 @@ laptop={'monitor' :     dell,
         'selectedCLR':  -0.5,               # [1 -1]
         'trialDur':     30,                 # in seconds
         'aSpeed':       14.5,               # in degrees of visual angle per second
-        'guiPos':       (200,400),          # in pixels
-        'winPos':       (0,0),              # in pixels
-        'fullscr':      False}
+        'rejDist':      3.0,                 # in degress of visual angle
+         'maze':        EmptyMaze((1,1),dispSize=(26,26),lw2cwRatio=0.0),
+         'nragents':    14,
+         'rejSampType': 1                  # type of rejection sampling
+        }
 
-eyelinklab ={'monitor' :sonycrt,
-        'refreshRate':  85,                # [hz]
-        'os':           WINDOWS,            # Linux or Windows
-        'phiRange':     [120,0*2],          # in degrees [0-360]
-        'agentSize':    1,                  # in degrees of visial angle
-        'initDistCC':   [12.0 ,18.0],       # in degrees of visial angle
-        'pDirChange':   [4.8,5.4,4.8],          # avg number of direction changes per second
-        'bckgCLR':      [-0,-0,-0],
-        'agentCLR':     1,                  # [1 -1]
-        'mouseoverCLR': 0.5,                # [1 -1]
-        'selectedCLR':  -0.5,               # [1 -1]
-        'trialDur':     30,                 # in seconds
-        'aSpeed':       14.5,               # in degrees of visual angle per second
-        'guiPos':       (200,400),          # in pixels
-        'winPos':       (0,0),              # in pixels
-        'fullscr':      True}
-
-smilab ={'monitor' :     smidell,
-        'refreshRate':  60,                # [hz]
-        'os':           WINDOWS,            # Linux or Windows
-        'phiRange':     [120,0*2],          # in degrees [0-360]
-        'agentSize':    1,                  # in degrees of visial angle
-        'initDistCC':   [12.0 ,18.0],       # in degrees of visial angle
-        'pDirChange':   [4.8,5.4,4.8],  # avg number of direction changes per second
-        'bckgCLR':      [-0,-0,-0],
-        'agentCLR':     1,                  # [1 -1]
-        'mouseoverCLR': 0.5,                # [1 -1]
-        'selectedCLR':  -0.5,               # [1 -1]
-        'trialDur':     30,                 # in seconds
-        'aSpeed':       14.5,               # in degrees of visual angle per second
-        'guiPos':       (200,400),          # in pixels
-        'winPos':       (0,0),              # in pixels
-        'fullscr':      True}
-tobiilab ={'monitor' :  t60,
-        'refreshRate':  75,                # [hz]
-        'os':           WINDOWS,            # Linux or Windows
-        'phiRange':     [120,0*2],          # in degrees [0-360]
-        'agentSize':    1,                  # in degrees of visial angle
-        'initDistCC':   [12.0 ,18.0],       # in degrees of visial angle
-        'pDirChange':   [4.8,5.5,4],          # avg number of direction changes per second
-        'bckgCLR':      [-0,-0,-0],
-        'agentCLR':     1,                  # [1 -1]
-        'mouseoverCLR': 0.5,                # [1 -1]
-        'selectedCLR':  -0.5,               # [1 -1]
-        'trialDur':     120,                # in seconds
-        'aSpeed':       9,                  # in degrees of visual angle per second
-        'guiPos':       (-800,400),         # in pixels
-        'winPos':       (1280,0),           # in pixels
-        'fullscr':      True}
-
-gao10e3={'monitor' :     t60,
-        'refreshRate':  75,                 # [hz]
-        'os':           WINDOWS,              # Linux or Windows
-        'phiRange':     [90,90],          # in degrees [0-360]
-        'agentSize':    1.9,                  # in degrees of visial angle
-        'initDistCC':   [4.0 ,4.0],       # in degrees of visial angle
-        'pDirChange':   [3.0,3.0,3.0],          # avg number of direction changes per second
+gao09={'phiRange':      [120,None],         
+        'agentSize':    1,                  
+        'initDistCC':   [12.0 ,18.0],       
+        'pDirChange':   [5.9,5.9,5.9],         
         'bckgCLR':      [-1,-1,-1],
-        'agentCLR':     1,                  # [1 -1]
-        'mouseoverCLR': 0.5,                # [1 -1]
-        'selectedCLR':  -0.5,               # [1 -1]
-        'trialDur':     17,                 # in seconds
-        'aSpeed':       7.8,               # in degrees of visual angle per second
-        'guiPos':       (-800,400),          # in pixels
-        'winPos':       (1280,0),              # in pixels
-        'fullscr':      True}
-        
-gao10e4={'monitor' :     t60,
-        'refreshRate':  75,                 # [hz]
-        'os':           WINDOWS,              # Linux or Windows
-        'phiRange':     [90,60.0],          # in degrees [0-360]
-        'agentSize':    1.5,                  # in degrees of visial angle
-        'initDistCC':   [4.0 ,4.0],       # in degrees of visial angle
-        'pDirChange':   [3.0,3.0,3.0],          # avg number of direction changes per second
-        'bckgCLR':      [-1,-1,-1],
-        'agentCLR':     1,                  # [1 -1]
-        'mouseoverCLR': 0.5,                # [1 -1]
-        'selectedCLR':  -0.5,               # [1 -1]
-        'trialDur':     8,                 # in seconds
-        'aSpeed':       5.5,               # in degrees of visual angle per second
-        'guiPos':       (-800,400),          # in pixels
-        'winPos':       (1280,0),              # in pixels
-        'fullscr':      True}
+        'agentCLR':     1,                  
+        'mouseoverCLR': 0.5,                
+        'selectedCLR':  -0.5,               
+        'trialDur':     10,                 
+        'aSpeed':       14.5,             
+        'rejDist':      5.0,                 
+         'maze':        EmptyMaze((1,1),dispSize=(32,24),lw2cwRatio=0.0),
+         'nragents':    5
+       }
 
-Q=Settings(**laptop)
-    
-#Q=Settings(**gao10e3)
-#Q=Settings(**tobiilab)
-#fpath=Q.inputPath+'vp081'+Q.delim+'SettingsExp.pkl'
-#print fpath
-#Q2.save(fpath)
-#
+gao10e4={'phiRange':     [120,None],         
+        'agentSize':    1,                  
+        'initDistCC':   [12.0 ,18.0],       
+        'pDirChange':   [5.4,5.4,5.4],# double-check these settings         
+        'bckgCLR':      [-0,-0,-0],
+        'agentCLR':     1,                  
+        'mouseoverCLR': 0.5,                
+        'selectedCLR':  -0.5,               
+        'trialDur':     8,                 
+        'aSpeed':       5.1,             
+        'rejDist':      0.0,                 
+         'maze':        EmptyMaze((1,1),dispSize=(18,18),lw2cwRatio=0),
+         'nragents':    5
+       }
+
+
+gao10e3={'phiRange':    [120,None],         
+        'agentSize':    1,                  
+        'initDistCC':   [12.0 ,18.0],       
+        'pDirChange':   [5.4,5.4,5.4],   
+        'bckgCLR':      [-0,-0,-0],
+        'agentCLR':     1,                  
+        'mouseoverCLR': 0.5,                
+        'selectedCLR':  -0.5,               
+        'trialDur':     8,                 
+        'aSpeed':       5.1,             
+        'rejDist':      0.0,                 
+         'maze':        None,
+         'nragents':    5
+       }
+
+def initQ(expsettings,pcsettings=laptop):
+    pcsettings.update(expsettings)
+    return Settings(**pcsettings)
