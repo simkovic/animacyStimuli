@@ -5,7 +5,7 @@ import os
 import pickle
 from Maze import EmptyMaze
 
-__all__ = ['initQ','mychase','gao09','gao10e3','gao10e4']
+__all__ = ['initQ','mychase','gao09','gao10e3','gao10e4','meyerhoff13']
 class Settings():
     def __init__(self,monitor,trialDur,refreshRate,agentSize,phiRange,
         pDirChange,initDistCC,bckgCLR,agentCLR,mouseoverCLR,selectedCLR,aSpeed,
@@ -154,7 +154,22 @@ gao10e3={'phiRange':    [120,None],
          'maze':        None,
          'nragents':    5
        }
-
+meyerhoff13={
+        'phiRange':      [120,0],         
+        'agentSize':    0.5,                  
+        'initDistCC':   [5.0 ,18.0],       
+        'pDirChange':   [6,6,6],         
+        'bckgCLR':      [-1,-1,-1],
+        'agentCLR':     1,                  
+        'mouseoverCLR': 0.5,                
+        'selectedCLR':  -0.5,               
+        'trialDur':     5,                 
+        'aSpeed':       7.25,             
+        'rejDist':      5.0,                 
+         'maze':        EmptyMaze((1,1),dispSize=(23.2,13.45),lw2cwRatio=0.0),
+         'nragents':    3,
+        'mask':         CIRCLE
+       }
 def initQ(expsettings,pcsettings=laptop):
     pcsettings.update(expsettings)
     return Settings(**pcsettings)

@@ -565,9 +565,9 @@ if __name__ == '__main__':
     #random.seed(3)
     
     #generateMixedExperiment([2],40,blocks=25,probeTrials=True)
-    Q=initQ(gao09)
-    Q.phiRange=(Q.phiRange[0],0)
-    createSample()
+    Q=initQ(meyerhoff13)
+    #Q.phiRange=(Q.phiRange[0],0)
+    createSample(prefix='meyerhoff13')
     #radialDensity()
     #agDistance()
 
@@ -580,7 +580,7 @@ if __name__ == '__main__':
 ##    pos=None
 ##    while pos is None: pos=generateTrial()
 ##    from Tools import showTrial
-##    showTrial(t,qsettings=Q)
+##    showTrial(pos,qsettings=Q)
 
         
         
