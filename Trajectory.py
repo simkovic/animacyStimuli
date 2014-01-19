@@ -415,7 +415,7 @@ def exportSvmGao09(nrtrials=10000):
     nrtrials=10000
         
     for cond in range(5):
-        Q.phiRange=(chs[cond],120)
+        Q.phiRange=(120,chs[cond])
         print cond
         fout1=open('svmGaoCond%03dT.train'%chs[cond],'w')
         fout2=open('svmGaoCond%03dF.train'%chs[cond],'w')
@@ -429,21 +429,26 @@ def exportSvmGao09(nrtrials=10000):
         fout2.close()
     os.chdir('..')
 
-def createSample(N=1000,prefix='gao09'):
+def createSample(N=10000,prefix='gao09',chs=[0]):
     path='trajectoryData'+os.path.sep+prefix+os.path.sep
     ncr=np.zeros((N,3))
     ndc=np.zeros((N,3))
     nbt=np.zeros(N)
-    for i in range(N):
-        pos=None
-        while pos is None: pos,crashes,bts,dc=generateTrial(STATISTICS=True)
-        np.save(path+'t%03d'%i,pos)
-        ncr[i,:]=crashes/float(Q.trialDur) # nr crashes per second
-        nbt[i]=bts/float(Q.trialDur) # nr backtracks per second
-        ndc[i,:]=np.array(dc)/float(Q.trialDur)  # nr dir changes per second
-    np.save(path+'nrcrashes',ncr)
-    np.save(path+'nrbacktracking',nbt)
-    np.save(path+'nrdirchanges',ndc)
+    ts=np.zeros((N,Q.nrframes,Q.nragents,3))
+    for ch in chs:
+        suffix='Chs%d'%ch
+        Q.phiRange=(Q.phiRange[0],ch)
+        for i in range(N):
+            pos=None
+            while pos is None: pos,crashes,bts,dc=generateTrial(STATISTICS=True)
+            ts[i,:,:,:]=pos
+            ncr[i,:]=crashes/float(Q.trialDur) # nr crashes per second
+            nbt[i]=bts/float(Q.trialDur) # nr backtracks per second
+            ndc[i,:]=np.array(dc)/float(Q.trialDur)  # nr dir changes per second
+        np.save(path+'t'+suffix,ts)
+        np.save(path+'nrcrashes'+suffix,ncr)
+        np.save(path+'nrbacktracking'+suffix,nbt)
+        np.save(path+'nrdirchanges'+suffix,ndc)
 
 def radialDensity(N=100,prefix='gao09',plot=True):
     ''' density per effective surface'''
@@ -456,7 +461,7 @@ def radialDensity(N=100,prefix='gao09',plot=True):
     for i in range(N):
         t=np.load('trajectoryData'+os.path.sep+
                 prefix+os.path.sep+'t%03d.npy'%i)
-        if prefix =='gao09': t=t[subsample,:-1,:2]
+        if prefix=='gao09':t=t[subsample,:-1,:2]
         else: t=t[subsample,:,:2]
         for a in [CHASER,CHASEE,DISTRACTOR]:
             D=np.swapaxes(t,0,1)-np.array(t[:,a,:],ndmin=3)
@@ -525,17 +530,6 @@ def phiDistribution(N=1000,prefix='gao09',plot=True):
         plt.xlabel('Abs Change in Direction in Degrees')
         plt.ylabel('Number of direction Changes per Second')
 
-def radialDensity(N=1000,prefix='gao09'):
-    ''' density per effective surface'''
-    import pylab as plt
-    inc=1
-    
-    R=np.zeros(np.int32(Q.maze.dispSize/float(inc)))*np.nan
-    for i in range(N):
-        t=np.load('trajectoryData'+os.path.sep+
-                prefix+os.path.sep+'t%03d.npy'%i)
-        for a in [CHASER,CHASEE,DISTRACTOR]:
-            R=np.histogram2d(t[:,0,0])
 def posDistribution(N=1000,prefix='gao09'):
     import pylab as plt
     inc=1
@@ -565,9 +559,10 @@ if __name__ == '__main__':
     #random.seed(3)
     
     #generateMixedExperiment([2],40,blocks=25,probeTrials=True)
-    Q=initQ(meyerhoff13)
+    Q=initQ(gao09)
+    createSample(chs=[150,120,90,60])
     #Q.phiRange=(Q.phiRange[0],0)
-    createSample(prefix='meyerhoff13')
+    #nrDirChanges(prefix='meyerhoff13')
     #radialDensity()
     #agDistance()
 
