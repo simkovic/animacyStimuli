@@ -8,17 +8,17 @@ import pylab as plt
 """
 # Call ezvision and get saliency maps
 vp=1
-inpath='saliency/input/vp%03d/'%vp
-outpath='saliency/output/vp%03d/'%vp
+inpath=os.path.sep.join(['trajectoryData','gao09','saliency','input',''])
+outpath=os.path.sep.join(['trajectoryData','gao09','saliency','output',''])
 files = os.listdir(inpath)
 files.sort()
 
 for f in files:
     print f
     status,output=commands.getstatusoutput('ezvision '+
-        '--in='+inpath+f+' --input-frames=0-MAX@85Hz --rescale-input=1024x1024 '+
+        '--in='+inpath+f+' --input-frames=0-MAX@60Hz --rescale-input=1024x1024 '+
         ' --crop-input=128,0,1152,1028 --rescale-output=64x64 '+
-        '--out=mraw:'+outpath+f[:-5]+' --output-frames=@85Hz ' +
+        '--out=mraw:'+outpath+f[:-5]+' --output-frames=@60Hz ' +
         '--save-channel-outputs --vc-chans=IM --sm-type=None '+
         '--nodisplay-foa --nodisplay-patch --nodisplay-traj '+
         '--nodisplay-additive --wta-type=None --nouse-random '+
