@@ -88,7 +88,7 @@ class Settings():
 dell=monitors.Monitor('dell', width=37.8, distance=50); dell.setSizePix((1280,1024))
 
 laptop={'monitor' :     dell,
-        'refreshRate':  75,                 # [hz]
+        'refreshRate':  60,                 # [hz]
         'fullscr':      True,
         'winPos':       (0,0)              # in pixels; X,Y axis; center at 0,0
         }

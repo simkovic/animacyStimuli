@@ -2,7 +2,7 @@ from Settings import *
 from Constants import *
 from psychopy.event import xydist
 import numpy as np
-import random, os, pickle
+import random, os, pickle, commands
 
 class RandomAgent():
     def __init__(self,nrframes,dispSize,pos,pdc,sd,moveRange):
@@ -386,48 +386,58 @@ def generateGao10e3(vpn):
 #
 #############################
 
-def exportSvmGao09(nrtrials=10000):
-    def saveTraj(fout,traj,label):
-        sample=5
-        fout.write('%d '%label)
-        i=1
-        for f in range(traj.shape[0]/sample):
-            for a in range(2):
-                fout.write('%d:%f '%(i,traj[f*sample,a,0]));i+=1
-                fout.write('%d:%f '%(i,traj[f*sample,a,1]));i+=1
-        fout.write('\n')            
-    Q=initQ(gao09)
-    chs=[300,240,180,120,60,0]
-    block=1
-    os.chdir('input/')
-##    fout=open('svmGao2.train','w')
-##    for trial in range(nrtrials):
-##        print trial
-##        for cond in range(6):
-##            trajectories=generateTrial(5,maze=maze,rejectionDistance=5.0,
-##                moveSubtlety=(chs[cond],120),trialDur=10)
-##            trajectories[:,:,0]/= 32.0
-##            trajectories[:,:,1]/= 24.0
-##            saveTraj(fout,trajectories[:,[0,1],:],1);
-##            saveTraj(fout,trajectories[:,[4,1],:],-1);
-##    fout.close()
 
-    nrtrials=10000
-        
-    for cond in range(5):
-        Q.phiRange=(120,chs[cond])
+def svmSaveTraj(fout,traj,label):
+    subsample=5
+    fout.write('%d '%label)
+    i=1
+    for f in range(traj.shape[1]/subsample):
+        for a in range(2):
+            fout.write('%d:%f '%(i,traj[a,f*subsample,0]));i+=1
+            fout.write('%d:%f '%(i,traj[a,f*subsample,1]));i+=1
+    fout.write('\n') 
+def svmGao09sep(chs=[60,90,120]):           
+    Q=initQ(gao09)
+    path=os.path.sep.join(['trajectoryData','gao09',''])
+    svmpath=path+'svm'+os.path.sep
+    for cond in range(len(chs)):
         print cond
-        fout1=open('svmGaoCond%03dT.train'%chs[cond],'w')
-        fout2=open('svmGaoCond%03dF.train'%chs[cond],'w')
-        for trial in range(nrtrials):
-            trajectories=generateTrial()
-            trajectories[:,:,0]/= 32.0
-            trajectories[:,:,1]/= 24.0
-            saveTraj(fout1,trajectories[:,[0,1],:],1);
-            saveTraj(fout2,trajectories[:,[4,1],:],-1);
+        t=np.load(path+'tChs%d.npy'%chs[cond])
+        # normalize to [0,1]
+        t[:,:,:,0]/= float(Q.maze.dispSize[X])
+        t[:,:,:,1]/= float(Q.maze.dispSize[Y])
+        fout1=open(svmpath+'svm%d.train'%chs[cond],'w')
+        #fout2=open(path+'svm'+os.path.sep+'svm%03dF.train'%chs[cond],'w')
+        for i in range(t.shape[0]):
+            svmSaveTraj(fout1,t[i,:,[0,1],:],1);
+            svmSaveTraj(fout1,t[i,:,[4,1],:],-1);
         fout1.close()
-        fout2.close()
-    os.chdir('..')
+        #fout2.close()
+        status,output=commands.getstatusoutput('svm-train %ssvm%d.train %ssvm%d.model'%tuple([svmpath,chs[cond]]*2))
+        if status!=0: print 'A,',output
+        status,output=commands.getstatusoutput('svm-predict %ssvm%d.train %ssvm%d.model %ssvm%d.predict'%tuple([svmpath,chs[cond]]*3))
+        if status!=0: print 'B,',output
+def svmGao09all(chs=[0,30,60,90,120,150]):
+    Q=initQ(gao09)
+    path=os.path.sep.join(['trajectoryData','gao09',''])
+    svmpath=path+'svm'+os.path.sep
+    fout1=open(svmpath+'svmAll.test','w')
+    for cond in range(len(chs)):
+        print cond
+        t=np.load(path+'tChs%d.npy'%chs[cond])
+        # normalize to [0,1]
+        t[:,:,:,0]/= float(Q.maze.dispSize[X])
+        t[:,:,:,1]/= float(Q.maze.dispSize[Y])
+                
+        #fout2=open(path+'svm'+os.path.sep+'svm%03dF.train'%chs[cond],'w')
+        for i in range(4000,t.shape[0]/5+4000):
+            svmSaveTraj(fout1,t[i,:,[0,1],:],1);
+            svmSaveTraj(fout1,t[i,:,[4,1],:],-1);
+    fout1.close()
+    #status,output=commands.getstatusoutput('svm-train %ssvmAll.train %ssvmAll.model'%tuple([svmpath]*2))
+    #if status!=0: print 'A,',output
+    status,output=commands.getstatusoutput('svm-predict %ssvmAll.train %ssvmAll.model %ssvmAll.tpredict'%tuple([svmpath]*3))
+    if status!=0: print 'B,',output
 
 def createSample(N=10000,prefix='gao09',chs=[0]):
     path='trajectoryData'+os.path.sep+prefix+os.path.sep
@@ -551,6 +561,33 @@ def posDistribution(N=1000,prefix='gao09'):
         ax.set_axis_off()
         plt.imshow(R[:,:,a].T,extent=[x[0],x[-1],y[0],y[-1]],cmap='gray',
                    origin='lower',interpolation='bicubic',aspect='equal')
+def plotGrid(chs=0):
+    ''' plots the output of libsvm/tools/grid.py '''
+    path=os.path.sep.join(['trajectoryData','gao09','svm',''])
+    f=open(path+'svm%d.grid'%chs,'r')
+    D=[]
+    for line in f.readlines():
+        D.append([])
+        for word in line[:-1].rsplit(' '):
+            D[-1].append(float(word.rsplit('=')[-1]))
+
+    f.close()
+    D=np.array(D)
+    x=np.unique(D[:,0])
+    y=np.unique(D[:,1])
+    X,Y=np.meshgrid(x,y)
+    Z=np.zeros(X.shape)
+    for i in range(D.shape[0]):
+        a=(D[i,0]==x).nonzero()[0][0]
+        b=(D[i,1]==y).nonzero()[0][0]
+        Z[b,a]=D[i,2]
+    plt.pcolormesh(X,Y,Z,vmin=95)
+    plt.ylim([y[0],y[-1]])
+    ax=plt.gca()
+    ax.set_xticks(x)
+    ax.set_yticks(y)
+    ax.set_xticklabels(np.round(np.power(2,x),2))
+    ax.set_yticklabels(np.round(np.power(2,y),4))
    
 if __name__ == '__main__':
     import pylab as plt
@@ -560,14 +597,14 @@ if __name__ == '__main__':
     
     #generateMixedExperiment([2],40,blocks=25,probeTrials=True)
     Q=initQ(gao09)
-    createSample(chs=[150,120,90,60])
+    #createSample(chs=[60])
     #Q.phiRange=(Q.phiRange[0],0)
     #nrDirChanges(prefix='meyerhoff13')
     #radialDensity()
     #agDistance()
 
     #phiDistribution()
-
+    svmGao09all()
 
         #plt.xlim([x[0],x[-1]])
         #plt.ylim([y[0],y[-1]])
@@ -577,6 +614,7 @@ if __name__ == '__main__':
 ##    from Tools import showTrial
 ##    showTrial(pos,qsettings=Q)
 
+    
         
         
     
