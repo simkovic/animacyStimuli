@@ -388,7 +388,7 @@ def generateGao10e3(vpn):
 
 
 def svmSaveTraj(fout,traj,label):
-    subsample=5
+    subsample=6
     fout.write('%d '%label)
     i=1
     for f in range(traj.shape[1]/subsample):
@@ -417,27 +417,47 @@ def svmGao09sep(chs=[60,90,120]):
         if status!=0: print 'A,',output
         status,output=commands.getstatusoutput('svm-predict %ssvm%d.train %ssvm%d.model %ssvm%d.predict'%tuple([svmpath,chs[cond]]*3))
         if status!=0: print 'B,',output
-def svmGao09all(chs=[0,30,60,90,120,150]):
-    Q=initQ(gao09)
+def svmGao09all(chs=[0,30,60,90,120,150],RANDOM=True):
+    Q=initQ(gao09);
     path=os.path.sep.join(['trajectoryData','gao09',''])
     svmpath=path+'svm'+os.path.sep
-    fout1=open(svmpath+'svmAll.test','w')
-    for cond in range(len(chs)):
-        print cond
-        t=np.load(path+'tChs%d.npy'%chs[cond])
-        # normalize to [0,1]
-        t[:,:,:,0]/= float(Q.maze.dispSize[X])
-        t[:,:,:,1]/= float(Q.maze.dispSize[Y])
-                
-        #fout2=open(path+'svm'+os.path.sep+'svm%03dF.train'%chs[cond],'w')
-        for i in range(4000,t.shape[0]/5+4000):
-            svmSaveTraj(fout1,t[i,:,[0,1],:],1);
-            svmSaveTraj(fout1,t[i,:,[4,1],:],-1);
-    fout1.close()
-    #status,output=commands.getstatusoutput('svm-train %ssvmAll.train %ssvmAll.model'%tuple([svmpath]*2))
-    #if status!=0: print 'A,',output
-    status,output=commands.getstatusoutput('svm-predict %ssvmAll.train %ssvmAll.model %ssvmAll.tpredict'%tuple([svmpath]*3))
-    if status!=0: print 'B,',output
+    for TEST in range(2):
+        fout1=open(svmpath+'svmAll.%s'%['train','test'][TEST],'w')
+        for cond in range(len(chs)):
+            print cond
+            t=np.load(path+'tChs%d.npy'%chs[cond])
+            # normalize to [0,1]
+            t[:,:,:,0]/= float(Q.maze.dispSize[X])
+            t[:,:,:,1]/= float(Q.maze.dispSize[Y])
+            for i in range(0,t.shape[0]/5):
+                if RANDOM: sel1=np.random.permutation(4); sel2=np.random.permutation(4)+1;
+                else: sel1=np.arange(4);sel2=np.arange(4);sel2[0]=4
+                svmSaveTraj(fout1,t[i+TEST*2000,:,sel1.tolist(),:],1);
+                svmSaveTraj(fout1,t[i+TEST*2000,:,sel2.tolist(),:],-1);
+        fout1.close()
+        fpath=svmpath+'svmAll'
+        if TEST==0:
+            status,output=commands.getstatusoutput('svm-train %s.train %s.model'%tuple([fpath]*2))
+            if status!=0: print 'A,',output
+        status,output=commands.getstatusoutput('svm-predict '+fpath+['.train','.test'][TEST]+' %s.model %s.%spredict'%(fpath,fpath,['','t'][TEST]))
+        if status!=0: print 'B,',output
+
+def svmRes(fpath):
+    k=0
+    for suf in ['.predict','.tpredict']:
+        d=np.loadtxt(fpath+suf)
+        t=np.arange(d.size)
+        t=(np.mod(t,2)==0)*2-1
+        res=d==t
+        g=[];h=[]
+        for c in range(6):
+            sel=np.arange(0,4000,2)
+            g.append(res[c*4000+sel].mean())
+            h.append(res[c*4000+sel+1].mean())
+        plt.plot([0,30,60,90,120,150],g,'%sr'%[':','-'][k])
+        plt.plot([0,30,60,90,120,150],h,'%sk'%[':','-'][k])
+        k+=1
+    plt.legend(['chase present','chase absent'],loc=3)
 
 def createSample(N=10000,prefix='gao09',chs=[0]):
     path='trajectoryData'+os.path.sep+prefix+os.path.sep
@@ -473,7 +493,7 @@ def radialDensity(N=100,prefix='gao09',plot=True):
                 prefix+os.path.sep+'t%03d.npy'%i)
         if prefix=='gao09':t=t[subsample,:-1,:2]
         else: t=t[subsample,:,:2]
-        for a in [CHASER,CHASEE,DISTRACTOR]:
+        for a in [CHASEE,CHASER,DISTRACTOR]:
             D=np.swapaxes(t,0,1)-np.array(t[:,a,:],ndmin=3)
             sel=range(D.shape[0]);sel.pop(a)
             D=D[sel,:,:]
@@ -597,7 +617,7 @@ if __name__ == '__main__':
     
     #generateMixedExperiment([2],40,blocks=25,probeTrials=True)
     Q=initQ(gao09)
-    #createSample(chs=[60])
+    #createSample(chs=[150])
     #Q.phiRange=(Q.phiRange[0],0)
     #nrDirChanges(prefix='meyerhoff13')
     #radialDensity()
@@ -605,6 +625,8 @@ if __name__ == '__main__':
 
     #phiDistribution()
     svmGao09all()
+    
+    #svmRes('trajectoryData/gao09/svm/svmAll')
 
         #plt.xlim([x[0],x[-1]])
         #plt.ylim([y[0],y[-1]])
@@ -614,10 +636,6 @@ if __name__ == '__main__':
 ##    from Tools import showTrial
 ##    showTrial(pos,qsettings=Q)
 
-    
-        
-        
-    
     #t=np.load('input/vp023/gao09e1vp023b1trial003.npy')
     #TD=TrajectoryData(t,trajRefresh=60.0,highlightChase=True)
     #TD.replay(tlag=0)
@@ -636,6 +654,7 @@ if __name__ == '__main__':
     #generateGao10e4(308)
     
     #generateGao10e3(range(350,370))
+    
 
 
         
